@@ -8,6 +8,13 @@
       "when": 1794813399981,
       "tag": "0000_bitter_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1794913712748,
+      "tag": "0001_eager_power_pack",
+      "breakpoints": true
     }
   ]
 }
