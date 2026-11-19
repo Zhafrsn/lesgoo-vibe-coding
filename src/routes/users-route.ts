@@ -1,7 +1,9 @@
 import { Elysia, t } from "elysia";
 import {
+  getCurrentUser,
   loginUser,
   registerUser,
+  UnauthorizedError,
   UserLoginError,
   UserRegistrationError,
 } from "../services/users-service";
@@ -55,4 +57,31 @@ export const usersRoute = new Elysia({ prefix: "/api/users" })
         password: t.String(),
       }),
     }
-  );
+  )
+  .post("/current", async ({ headers, set }) => {
+    try {
+      const authorization = headers["authorization"] || headers["Authorization"];
+      if (!authorization || !authorization.startsWith("Bearer ")) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const token = authorization.slice(7).trim();
+      if (!token) {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      const result = await getCurrentUser(token);
+      set.status = 200;
+      return result;
+    } catch (error: any) {
+      if (error instanceof UnauthorizedError || error?.message === "Unauthorized") {
+        set.status = 401;
+        return { error: "Unauthorized" };
+      }
+
+      set.status = 500;
+      return { error: "Terjadi kesalahan internal server" };
+    }
+  });
