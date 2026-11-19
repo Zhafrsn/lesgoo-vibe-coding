@@ -1,5 +1,10 @@
 import { Elysia, t } from "elysia";
-import { registerUser, UserRegistrationError } from "../services/users-service";
+import {
+  loginUser,
+  registerUser,
+  UserLoginError,
+  UserRegistrationError,
+} from "../services/users-service";
 
 export const usersRoute = new Elysia({ prefix: "/api/users" })
   .post(
@@ -22,6 +27,30 @@ export const usersRoute = new Elysia({ prefix: "/api/users" })
     {
       body: t.Object({
         name: t.String(),
+        email: t.String(),
+        password: t.String(),
+      }),
+    }
+  )
+  .post(
+    "/login",
+    async ({ body, set }) => {
+      try {
+        const result = await loginUser(body);
+        set.status = 200;
+        return result;
+      } catch (error: any) {
+        if (error instanceof UserLoginError || error?.message === "Email atau password salah") {
+          set.status = 400;
+          return { error: "Email atau password salah" };
+        }
+
+        set.status = 500;
+        return { error: "Terjadi kesalahan internal server" };
+      }
+    },
+    {
+      body: t.Object({
         email: t.String(),
         password: t.String(),
       }),
