@@ -223,4 +223,101 @@ describe("User API Tests", () => {
       expect(body).toEqual({ error: "Unauthorized" });
     });
   });
+
+  describe("DELETE /api/users/logout - Logout API", () => {
+    it("should successfully logout and delete session token from database", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/logout", {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        })
+      );
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data?: string; error?: string };
+      expect(body).toEqual({ data: "OK" });
+
+      // Verifikasi sesi terhapus dari tabel sessions
+      const [deletedSession] = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.token, sessionToken))
+        .limit(1);
+
+      expect(deletedSession).toBeUndefined();
+
+      // Verifikasi token yang sama tidak bisa lagi dipakai untuk /api/users/current
+      const currentRes = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        })
+      );
+
+      expect(currentRes.status).toBe(401);
+      const currentBody = (await currentRes.json()) as { error?: string };
+      expect(currentBody).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Authorization header is missing on logout", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/logout", {
+          method: "DELETE",
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Authorization header is not Bearer on logout", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/logout", {
+          method: "DELETE",
+          headers: {
+            Authorization: "Basic 123456",
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Bearer token is empty on logout", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/logout", {
+          method: "DELETE",
+          headers: {
+            Authorization: "Bearer   ",
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when session token is invalid or already logged out", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/logout", {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+  });
 });
