@@ -125,3 +125,17 @@ export async function getCurrentUser(token: string) {
     },
   };
 }
+
+export async function logoutUser(token: string) {
+  // Langsung hapus session dari database dalam 1 query dan cek affectedRows
+  const [result] = (await db.delete(sessions).where(eq(sessions.token, token))) as [
+    { affectedRows: number },
+    unknown
+  ];
+
+  if (!result || result.affectedRows === 0) {
+    throw new UnauthorizedError("Unauthorized");
+  }
+
+  return { data: "OK" as const };
+}
