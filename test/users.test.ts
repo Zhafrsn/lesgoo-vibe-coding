@@ -5,6 +5,8 @@ import { sessions, users } from "../src/db/schema";
 import { eq } from "drizzle-orm";
 
 describe("User API Tests", () => {
+  let sessionToken = "";
+
   beforeAll(async () => {
     // Bersihkan sesi dan user pengujian jika ada
     const [existing] = await db
@@ -91,6 +93,8 @@ describe("User API Tests", () => {
       expect(typeof body.data).toBe("string");
       expect(body.data?.length).toBeGreaterThan(0);
 
+      sessionToken = body.data!;
+
       // Verifikasi token tersimpan di tabel sessions
       const [savedSession] = await db
         .select()
@@ -135,6 +139,88 @@ describe("User API Tests", () => {
       expect(res.status).toBe(400);
       const body = (await res.json()) as { data?: string; error?: string };
       expect(body).toEqual({ error: "Email atau password salah" });
+    });
+  });
+
+  describe("GET /api/users/current - Current User API", () => {
+    it("should return current user profile when given valid Bearer token", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+          },
+        })
+      );
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        data?: { id: number; name: string; email: string; created_at: string; password?: string };
+        error?: string;
+      };
+
+      expect(body.data).toBeDefined();
+      expect(body.data?.name).toBe("eko");
+      expect(body.data?.email).toBe("eko@local");
+      expect(body.data?.created_at).toBeDefined();
+      expect(body.data?.password).toBeUndefined();
+    });
+
+    it("should return 401 when Authorization header is missing", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Authorization header does not use Bearer scheme", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+          headers: {
+            Authorization: "Basic 123456",
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Bearer token is empty", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer   ",
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
+    });
+
+    it("should return 401 when Bearer token is invalid or non-existent", async () => {
+      const res = await app.handle(
+        new Request("http://localhost:3000/api/users/current", {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer token-palsu-12345",
+          },
+        })
+      );
+
+      expect(res.status).toBe(401);
+      const body = (await res.json()) as { error?: string };
+      expect(body).toEqual({ error: "Unauthorized" });
     });
   });
 });
