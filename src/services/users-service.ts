@@ -127,19 +127,15 @@ export async function getCurrentUser(token: string) {
 }
 
 export async function logoutUser(token: string) {
-  // Cek apakah session ada di tabel sessions
-  const [session] = await db
-    .select({ id: sessions.id })
-    .from(sessions)
-    .where(eq(sessions.token, token))
-    .limit(1);
+  // Langsung hapus session dari database dalam 1 query dan cek affectedRows
+  const [result] = (await db.delete(sessions).where(eq(sessions.token, token))) as [
+    { affectedRows: number },
+    unknown
+  ];
 
-  if (!session) {
+  if (!result || result.affectedRows === 0) {
     throw new UnauthorizedError("Unauthorized");
   }
-
-  // Hapus session dari database
-  await db.delete(sessions).where(eq(sessions.token, token));
 
   return { data: "OK" as const };
 }
