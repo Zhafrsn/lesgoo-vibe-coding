@@ -58,7 +58,7 @@ export const usersRoute = new Elysia({ prefix: "/api/users" })
       }),
     }
   )
-  .post("/current", async ({ headers, set }) => {
+  .get("/current", async ({ headers, set }) => {
     try {
       const authorization = headers["authorization"] || headers["Authorization"];
       if (!authorization || !authorization.startsWith("Bearer ")) {

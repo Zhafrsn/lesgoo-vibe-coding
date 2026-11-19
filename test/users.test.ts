@@ -142,11 +142,11 @@ describe("User API Tests", () => {
     });
   });
 
-  describe("POST /api/users/current - Current User API", () => {
+  describe("GET /api/users/current - Current User API", () => {
     it("should return current user profile when given valid Bearer token", async () => {
       const res = await app.handle(
         new Request("http://localhost:3000/api/users/current", {
-          method: "POST",
+          method: "GET",
           headers: {
             Authorization: `Bearer ${sessionToken}`,
           },
@@ -169,7 +169,7 @@ describe("User API Tests", () => {
     it("should return 401 when Authorization header is missing", async () => {
       const res = await app.handle(
         new Request("http://localhost:3000/api/users/current", {
-          method: "POST",
+          method: "GET",
         })
       );
 
@@ -181,7 +181,7 @@ describe("User API Tests", () => {
     it("should return 401 when Authorization header does not use Bearer scheme", async () => {
       const res = await app.handle(
         new Request("http://localhost:3000/api/users/current", {
-          method: "POST",
+          method: "GET",
           headers: {
             Authorization: "Basic 123456",
           },
@@ -196,7 +196,7 @@ describe("User API Tests", () => {
     it("should return 401 when Bearer token is empty", async () => {
       const res = await app.handle(
         new Request("http://localhost:3000/api/users/current", {
-          method: "POST",
+          method: "GET",
           headers: {
             Authorization: "Bearer   ",
           },
@@ -211,7 +211,7 @@ describe("User API Tests", () => {
     it("should return 401 when Bearer token is invalid or non-existent", async () => {
       const res = await app.handle(
         new Request("http://localhost:3000/api/users/current", {
-          method: "POST",
+          method: "GET",
           headers: {
             Authorization: "Bearer token-palsu-12345",
           },
